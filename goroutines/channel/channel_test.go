@@ -26,10 +26,13 @@ func Test_ChannelInOut(t *testing.T) {
 
 func Test_SelectChannel(t *testing.T) {
 	evenChan, oddChan := make(chan int), make(chan int)
-	arrInt := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	arrInt := []int{1, 5, 10, 11, 2, 3, 4, 12, 13, 6, 7, 8, 9}
 
+	defer close(evenChan)
+	defer close(oddChan)
 	for _, v := range arrInt {
 		go func(v int) {
+			time.Sleep(time.Second * 2)
 			if v%2 == 0 {
 				evenChan <- v
 			} else {
@@ -37,15 +40,48 @@ func Test_SelectChannel(t *testing.T) {
 			}
 		}(v)
 	}
-
-	arrEven, arrOdd := []int{}, []int{}
-	for i := 0; i < len(arrInt); i++ {
+	counter := 0
+	for counter < len(arrInt) {
 		select {
 		case d := <-evenChan:
-			arrEven = append(arrEven, d)
+			fmt.Println("Even : ", d)
+			counter++
 		case d := <-oddChan:
-			arrOdd = append(arrOdd, d)
+			fmt.Println("Odd : ", d)
+			counter++
 		}
 	}
-	fmt.Println(arrEven, arrOdd)
+}
+
+func Test_DefaultSelect(t *testing.T) {
+	evenChan, oddChan := make(chan int), make(chan int)
+	arrInt := []int{1, 5, 10, 11, 2, 3, 4, 12, 13, 6, 7, 8, 9}
+
+	defer close(evenChan)
+	defer close(oddChan)
+	for _, v := range arrInt {
+		go func(v int) {
+			if v%2 == 0 {
+				time.Sleep(time.Millisecond * 100)
+				evenChan <- v
+			} else {
+				time.Sleep(time.Millisecond * 90)
+				oddChan <- v
+			}
+		}(v)
+	}
+
+	counter := 0
+	for counter < len(arrInt) {
+		select {
+		case d := <-evenChan:
+			fmt.Println("Even : ", d)
+			counter++
+		case d := <-oddChan:
+			fmt.Println("Odd : ", d)
+			counter++
+		default:
+			fmt.Println("waiting for data")
+		}
+	}
 }
